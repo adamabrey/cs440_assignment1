@@ -36,6 +36,7 @@ struct Deque_int {
   int front_i;
   int back_i;
   int data_size;
+  int num_of_vals;
   int (*pop_back)(Deque_int *);
   int (*pop_front)(Deque_int *);
   void (*push_back)(Deque_int *, int val);
@@ -50,12 +51,14 @@ struct Deque_int {
   Deque_int_Iterator (*end)(Deque_int *);
   size_t (*size)(Deque_int *);
   void (*sort)(Deque_int *, Deque_int_Iterator it1, Deque_int_Iterator it2);
-  bool (*is_less)(int val1, int val2);
+  bool (*is_less)(const int &val1, const int &val2);
+  char type_name[sizeof("Deque_int")];
 };
 
 int pop_back(Deque_int *deq) {
   if (!deq->empty(deq)) {
     deq->back_i = (deq->back_i - 1) % deq->data_size;
+    deq->num_of_vals--;
     return deq->data[deq->back_i];
   }
   return 0;
@@ -65,6 +68,7 @@ int pop_front(Deque_int *deq) {
   if (!deq->empty(deq)) {
     int val = deq->data[deq->front_i];
     deq->front_i = (deq->front_i + 1) % deq->data_size;
+    deq->num_of_vals--;
     return val;
   }
   return 0;
@@ -73,10 +77,11 @@ int pop_front(Deque_int *deq) {
 void push_back(Deque_int *deq, int val) {
   if (deq->size(deq) == deq->data_size) {
     int* new_data = (int*)malloc(deq->data_size * 2 * sizeof(int));
-    int new_i = 0;
-    for (int i=deq->front_i; i != deq->back_i; i = (i+1)%deq->data_size) {
+    int i = deq->front_i;
+    int new_i;
+    for (new_i = 0; new_i < deq->num_of_vals; new_i++) {
       new_data[new_i] = deq->data[i];
-      new_i++;
+      i = (i+1)%deq->data_size;
     }
     deq->front_i = 0;
     deq->back_i = new_i;
@@ -86,15 +91,17 @@ void push_back(Deque_int *deq, int val) {
   }
   deq->data[deq->back_i] = val;
   deq->back_i = (deq->back_i + 1) % deq->data_size;
+  deq->num_of_vals++;
 }
 
 void push_front(Deque_int *deq, int val) {
   if (deq->size(deq) == deq->data_size) {
     int* new_data = (int*)malloc(deq->data_size * 2 * sizeof(int));
-    int new_i = 0;
-    for (int i=deq->front_i; i != deq->back_i; i = (i+1)%deq->data_size) {
+    int i = deq->front_i;
+    int new_i;
+    for (new_i = 0; new_i < deq->num_of_vals; new_i++) {
       new_data[new_i] = deq->data[i];
-      new_i++;
+      i = (i+1)%deq->data_size;
     }
     deq->front_i = 0;
     deq->back_i = new_i;
@@ -104,6 +111,7 @@ void push_front(Deque_int *deq, int val) {
   }
   deq->front_i = (deq->front_i - 1) % deq->data_size;
   deq->data[deq->front_i] = val;
+  deq->num_of_vals++;
 }
 
 void dtor(Deque_int *deq) {
@@ -131,6 +139,7 @@ void clear(Deque_int *deq) {
   deq->data = (int*)malloc(deq->data_size * sizeof(int));
   deq->front_i = 0;
   deq->back_i = 0;
+  deq->num_of_vals = 0;
 }
 
 //think this returns an iterator to the front_i location
@@ -158,7 +167,7 @@ Deque_int_Iterator end(Deque_int *deq) {
 }
 
 std::size_t size(Deque_int *deq) {
-  return (deq->back_i - deq->front_i) % deq->data_size;
+  return deq->num_of_vals;
 }
 
 bool Deque_int_Iterator_equal(Deque_int_Iterator it1, Deque_int_Iterator it2) {
@@ -194,10 +203,13 @@ void sort(Deque_int *deq, Deque_int_Iterator start, Deque_int_Iterator end) {
       y.inc(&y);
       *(y.addr) = temp;
       y.dec(&y);
+
+    } else {
+      y.inc(&y);            //needed for y+1
+                            //unless at start, then y was never decremented
     }
 
-    y.inc(&y);              //data[y+1] = current;
-    *(y.addr) = current;
+    *(y.addr) = current;    //data[y+1] = current;
   }
 }
 
@@ -222,11 +234,12 @@ bool Deque_int_equal(Deque_int deq1, Deque_int deq2) {
   return true;
 }
 
-void Deque_int_ctor(Deque_int *deq, bool (less_than)(int, int)) {
+void Deque_int_ctor(Deque_int *deq, bool (less_than)(const int &, const int &)) {
   deq->data_size = 8;         //feel like power of 2 has some benefit?
   deq->data = (int*)malloc(deq->data_size * sizeof(int));
   deq->front_i = 0;
   deq->back_i = 0;
+  deq->num_of_vals = 0;
   deq->pop_back = &pop_back;
   deq->pop_front = &pop_front;
   deq->push_back = &push_back;
@@ -242,6 +255,7 @@ void Deque_int_ctor(Deque_int *deq, bool (less_than)(int, int)) {
   deq->size = &size;
   deq->sort = &sort;          //init all function pointers in deque
   deq->is_less = less_than;   //set cmp function for sorting
+  strcpy(deq->type_name, "Deque_int");
 }
 
 #endif
