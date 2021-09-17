@@ -5,21 +5,29 @@
 struct Deque_int_Iterator {
   int* addr;
   int* first_addr;
-  int* end_addr;
+  int* last_addr;
   void (*inc)(Deque_int_Iterator *);
   void (*dec)(Deque_int_Iterator *);
   int (*deref)(Deque_int_Iterator *);
 };
 
 void inc(Deque_int_Iterator *it) {
-  (it->addr)++;
+  if (it->addr == it->last_addr) {
+    it->addr = it->first_addr;
+  } else {
+    it->addr++;
+  }
 }
 
-void dec(Deque_int_Iterator* it) {
-  (it->addr)--;
+void dec(Deque_int_Iterator *it) {
+  if (it->addr == it->first_addr) {
+    it->addr = it->last_addr;
+  } else {
+    it->addr--;
+  }
 }
 
-int deref(Deque_int_Iterator *) {
+int deref(Deque_int_Iterator *it) {
   return *(it->addr);
 }
 
@@ -127,6 +135,8 @@ void clear(Deque_int *deq) {
 //think this returns an iterator to the front_i location
 Deque_int_Iterator begin(Deque_int *deq) {
   Deque_int_Iterator it;
+  it.first_addr = &(deq->data[0]);
+  it.last_addr = &(deq->data[deq->data_size-1]);
   it.addr = &(deq->data[deq->front_i]);
   it.inc = &inc;
   it.dec = &dec;
@@ -137,6 +147,8 @@ Deque_int_Iterator begin(Deque_int *deq) {
 //think this returns an iterator to the back_i location
 Deque_int_Iterator end(Deque_int *deq) {
   Deque_int_Iterator it;
+  it.first_addr = &(deq->data[0]);
+  it.last_addr = &(deq->data[deq->data_size-1]);
   it.addr = &(deq->data[deq->back_i]);
   it.inc = &inc;
   it.dec = &dec;
@@ -153,11 +165,21 @@ void sort(Deque_int *deq, Deque_int_Iterator it1, Deque_int_Iterator it2) {
 }
 
 bool Deque_int_equal(Deque_int deq1, Deque_int deq2) {
-
+  if (deq1.size(deq1) != deq2.size(deq2)) {
+    return false;
+  }
+  Deque_int_Iterator it2 = deq2.begin(&deq2);
+  for (Deque_int_Iterator it1 = deq1.begin(&deq1); !Deque_MyClass_Iterator_equal(it1, deq1.end(&deq1)); it1.inc(&it1)) {
+    if (it2.deref(&it2) != it1.deref(&it1)) { //structs cant be == so idk
+      return false;
+    }
+    it2.inc(&it2);
+  }
+  return true;
 }
 
-bool Deque_int_Iterator_equal(Deque_int_Iterator it, Deque_int_Iterator it_end, Deque_int_Iterator it_inc) {
-
+bool Deque_int_Iterator_equal(Deque_int_Iterator it1, Deque_int_Iterator it2) {
+  return (it1->addr == it2->addr);
 }
 
 void Deque_int_ctor(Deque_int *deq, bool (*cmp)(int, int)) {
