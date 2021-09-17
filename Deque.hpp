@@ -8,7 +8,7 @@
     t *last_addr;\
     void (*inc)(Deque_##t##_Iterator *);\
     void (*dec)(Deque_##t##_Iterator *);\
-    t (*deref)(Deque_##t##_Iterator *);\
+    t &(*deref)(Deque_##t##_Iterator *);\
   };\
 \
   void inc(Deque_##t##_Iterator *it) {\
@@ -27,7 +27,7 @@
     }\
   }\
 \
-  t deref(Deque_##t##_Iterator *it) {\
+  t &deref(Deque_##t##_Iterator *it) {\
     return *(it->addr);\
   }\
 \
@@ -42,9 +42,9 @@
     void (*push_back)(Deque_##t *, t val);\
     void (*push_front)(Deque_##t *, t val);\
     void (*dtor)(Deque_##t *);\
-    t (*at)(Deque_##t *, int i);\
-    t (*back)(Deque_##t *);\
-    t (*front)(Deque_##t *);\
+    t &(*at)(Deque_##t *, int i);\
+    t &(*back)(Deque_##t *);\
+    t &(*front)(Deque_##t *);\
     bool (*empty)(Deque_##t *);\
     void (*clear)(Deque_##t *);\
     Deque_##t##_Iterator (*begin)(Deque_##t *);\
@@ -56,7 +56,9 @@
   };\
 \
   t pop_back(Deque_##t *deq) {\
-    deq->back_i = (deq->back_i - 1) % deq->data_size;\
+    int i = deq->back_i - 1;\
+    if (i < 0) i += deq->data_size;\
+    deq->back_i = i;\
     deq->num_of_vals--;\
     return deq->data[deq->back_i];\
   }\
@@ -103,7 +105,8 @@
       free(deq->data);\
       deq->data = new_data;\
     }\
-    deq->front_i = (deq->front_i - 1) % deq->data_size;\
+    deq->front_i = (deq->front_i - 1);\
+    if (deq->front_i < 0) deq->front_i += deq->data_size;\
     deq->data[deq->front_i] = val;\
     deq->num_of_vals++;\
   }\
@@ -112,15 +115,15 @@
     free(deq->data);\
   }\
 \
-  t at(Deque_##t *deq, int i) {\
+  t &at(Deque_##t *deq, int i) {\
     return deq->data[(deq->front_i + i) % deq->data_size];\
   }\
 \
-  t front(Deque_##t *deq) {\
+  t &front(Deque_##t *deq) {\
     return deq->data[deq->front_i];\
   }\
 \
-  t back(Deque_##t *deq) {\
+  t &back(Deque_##t *deq) {\
     return deq->data[(deq->back_i - 1) % deq->data_size];\
   }\
 \
@@ -129,8 +132,8 @@
   }\
 \
   void clear(Deque_##t *deq) {\
-    free(deq->data);\
-    deq->data = (t *)malloc(deq->data_size * sizeof(t));\
+    /*free(deq->data);*/\
+    /*deq->data = (t *)malloc(deq->data_size * sizeof(t));*/\
     deq->front_i = 0;\
     deq->back_i = 0;\
     deq->num_of_vals = 0;\
@@ -185,17 +188,17 @@
 \
         temp = y.deref(&y);   /*ugly way to do data[y+1] = data[y];*/\
         y.inc(&y);\
-        *(y.addr) = temp;\
+        y.deref(&y) = temp;\
         y.dec(&y);\
 \
         y.dec(&y);            /*y--*/\
       }\
 \
       /*if (y == 0)*/\
-      if (Deque_##t##_Iterator_equal(y, start)) {\
+      if (Deque_##t##_Iterator_equal(y, start) && deq->is_less(current, y.deref(&y))) {\
         temp = y.deref(&y);   /*data[y+1] = data[y];*/\
         y.inc(&y);\
-        *(y.addr) = temp;\
+        y.deref(&y) = temp;\
         y.dec(&y);\
 \
       } else {\
@@ -203,7 +206,7 @@
                               /*unless at start, then y was never decremented*/\
       }\
 \
-      *(y.addr) = current;    /*data[y+1] = current;*/\
+      y.deref(&y) = current;    /*data[y+1] = current;*/\
     }\
   }\
 \

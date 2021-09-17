@@ -180,10 +180,6 @@ main() {
 
         // printf("Using at.\n");
 
-        for (size_t i = 0; i < 3; i++) {
-            MyClass_print(&deq.at(&deq, i));
-        }
-
         // Test that front(), back(), at(), and deref() are returning a reference.
         // Change via at().
         assert(deq.at(&deq, 0).id == 0);
@@ -207,9 +203,13 @@ main() {
             assert(it.deref(&it).id == 2); // Verify with iterator also.
         }
 
+	for (Deque_MyClass_Iterator it7 = deq.begin(&deq); !Deque_MyClass_Iterator_equal(it7, deq.end(&deq)); it7.inc(&it7)) {
+		MyClass_print(&it7.deref(&it7));
+	}
+
         deq.clear(&deq);
 
-        deq.dtor(&deq);
+        deq.dtor(&deq);;
 
         // Test equality.  Two deques compare equal if they are of the same
         // length and all the elements compare equal.  It is undefined behavior
@@ -248,8 +248,6 @@ main() {
 
         assert(deq.size(&deq) == 0);
         assert(deq.empty(&deq));
-
-        printf("%d\n", sizeof("Deque_int"));
 
         // Should print "---- Deque_int, 10".
         printf("---- %s, %d\n", deq.type_name, int(sizeof(deq.type_name)));
