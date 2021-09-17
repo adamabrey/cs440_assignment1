@@ -160,8 +160,42 @@ std::size_t size(Deque_int *deq) {
   return (deq->back_i - deq->front_i) % deq->data_size;
 }
 
-void sort(Deque_int *deq, Deque_int_Iterator it1, Deque_int_Iterator it2) {
+//function set by constructor to use for sorting
+bool is_less(int val1, int val2);
 
+//could get better performance with faster sort, but insertion sort is simple
+void sort(Deque_int *deq, Deque_int_Iterator start, Deque_int_Iterator end) {
+  int current, temp;
+  Deque_int_Iterator x = start;
+  Deque_int_Iterator y;
+  for (x.inc(&x); !Deque_int_Iterator_equal(x, end); x.inc(&x)) {
+    current = x.deref(&x);
+
+    x.dec(&x);                //ugly way to put y = x - 1
+    y = x;                    //retains all fields
+    x.inc(&x);
+
+    //while (y > 0 && current < data[y])
+    while (!Deque_int_Iterator_equal(y, it1) && is_less(current, y.deref(&y))) {
+
+      temp = y.deref(&y);   //ugly way to do data[y+1] = data[y];
+      y.inc(&y);
+      *(y.addr) = temp;
+      y.dec(&y);
+
+      y.dec(&y);            //y--
+    }
+
+    if (Deque_int_Iterator_equal(y, it1)) {
+      temp = y.deref(&y);   //data[y+1] = data[y];
+      y.inc(&y);
+      *(y.addr) = temp;
+      y.dec(&y);
+    }
+
+    y.inc(&y);              //data[y+1] = current;
+    *(y.addr) = current;
+  }
 }
 
 bool Deque_int_equal(Deque_int deq1, Deque_int deq2) {
@@ -171,6 +205,8 @@ bool Deque_int_equal(Deque_int deq1, Deque_int deq2) {
   Deque_int_Iterator it2 = deq2.begin(&deq2);
   for (Deque_int_Iterator it1 = deq1.begin(&deq1); !Deque_MyClass_Iterator_equal(it1, deq1.end(&deq1)); it1.inc(&it1)) {
     if (it2.deref(&it2) != it1.deref(&it1)) { //structs cant be == so idk
+                                              //change to double less than comparison
+                                              //figure out if want to deal with func not set first
       return false;
     }
     it2.inc(&it2);
@@ -182,8 +218,28 @@ bool Deque_int_Iterator_equal(Deque_int_Iterator it1, Deque_int_Iterator it2) {
   return (it1->addr == it2->addr);
 }
 
-void Deque_int_ctor(Deque_int *deq, bool (*cmp)(int, int)) {
+void Deque_int_ctor(Deque_int *deq, bool (less_than)(int, int)) {
+  deq->data_size = 8;   //feel like power of 2 has some benefit?
+  deq->data = (int*)malloc(deq->data_size * sizeof(int));
+  deq->front_i = 0;
+  deq->back_i = 0;
+  deq->pop_back = &pop_back;
+  deq->pop_front = &pop_front;
+  deq->push_back = &push_back;
+  deq->push_front = &push_front;
+  deq->dtor = &dtor;
+  deq->at = &at;
+  deq->back = &back;
+  deq->front = &front;
+  deq->empty = &empty;
+  deq->clear = &clear;
+  deq->begin = &begin;
+  deq->end = &end;
+  deq->size = &size;
+  deq->sort = &sort;    //init all function pointers in deque
 
+  is_less = less_than;  //set cmp function for sorting;
+                        //test to see if need as a deque function instead
 }
 
 #endif
