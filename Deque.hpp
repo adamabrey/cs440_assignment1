@@ -4,6 +4,8 @@
 #define Deque_DEFINE(t)
 struct Deque_int_Iterator {
   int* addr;
+  int* first_addr;
+  int* end_addr;
   void (*inc)(Deque_int_Iterator *);
   void (*dec)(Deque_int_Iterator *);
   int (*deref)(Deque_int_Iterator *);
@@ -38,7 +40,7 @@ struct Deque_int {
   void (*clear)(Deque_int *);
   Deque_int_Iterator (*begin)(Deque_int *);
   Deque_int_Iterator (*end)(Deque_int *);
-  int (*size)(Deque_int *);
+  size_t (*size)(Deque_int *);
   void (*sort)(Deque_int *, Deque_int_Iterator it1, Deque_int_Iterator it2);
 };
 
@@ -122,15 +124,27 @@ void clear(Deque_int *deq) {
   deq->back_i = 0;
 }
 
+//think this returns an iterator to the front_i location
 Deque_int_Iterator begin(Deque_int *deq) {
-  
+  Deque_int_Iterator it;
+  it.addr = &(deq->data[deq->front_i]);
+  it.inc = &inc;
+  it.dec = &dec;
+  it.deref = &deref;
+  return it;
 }
 
+//think this returns an iterator to the back_i location
 Deque_int_Iterator end(Deque_int *deq) {
-
+  Deque_int_Iterator it;
+  it.addr = &(deq->data[deq->back_i]);
+  it.inc = &inc;
+  it.dec = &dec;
+  it.deref = &deref;
+  return it;
 }
 
-int size(Deque_int *deq) {
+std::size_t size(Deque_int *deq) {
   return (deq->back_i - deq->front_i) % deq->data_size;
 }
 
@@ -142,11 +156,11 @@ bool Deque_int_equal(Deque_int deq1, Deque_int deq2) {
 
 }
 
-bool Deque_int_Iterator_equal(Deque_int_Iterator it1, Deque_int_Iterator it2) {
+bool Deque_int_Iterator_equal(Deque_int_Iterator it, Deque_int_Iterator it_end, Deque_int_Iterator it_inc) {
 
 }
 
-void Deque_int_ctor(Deque_int *, bool (*cmp)(int, int)) {
+void Deque_int_ctor(Deque_int *deq, bool (*cmp)(int, int)) {
 
 }
 
