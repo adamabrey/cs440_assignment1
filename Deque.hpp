@@ -50,6 +50,7 @@ struct Deque_int {
   Deque_int_Iterator (*end)(Deque_int *);
   size_t (*size)(Deque_int *);
   void (*sort)(Deque_int *, Deque_int_Iterator it1, Deque_int_Iterator it2);
+  bool (*is_less)(int val1, int val2);
 };
 
 int pop_back(Deque_int *deq) {
@@ -73,7 +74,7 @@ void push_back(Deque_int *deq, int val) {
   if (deq->size(deq) == deq->data_size) {
     int* new_data = (int*)malloc(deq->data_size * 2 * sizeof(int));
     int new_i = 0;
-    for (int i=deq->front_i; i != deq->back_i; i = (i+1)%data_size) {
+    for (int i=deq->front_i; i != deq->back_i; i = (i+1)%deq->data_size) {
       new_data[new_i] = deq->data[i];
       new_i++;
     }
@@ -160,8 +161,9 @@ std::size_t size(Deque_int *deq) {
   return (deq->back_i - deq->front_i) % deq->data_size;
 }
 
-//function set by constructor to use for sorting
-bool is_less(int val1, int val2);
+bool Deque_int_Iterator_equal(Deque_int_Iterator it1, Deque_int_Iterator it2) {
+  return (it1.addr == it2.addr);
+}
 
 //could get better performance with faster sort, but insertion sort is simple
 void sort(Deque_int *deq, Deque_int_Iterator start, Deque_int_Iterator end) {
@@ -176,7 +178,7 @@ void sort(Deque_int *deq, Deque_int_Iterator start, Deque_int_Iterator end) {
     x.inc(&x);
 
     //while (y > 0 && current < data[y])
-    while (!Deque_int_Iterator_equal(y, it1) && is_less(current, y.deref(&y))) {
+    while (!Deque_int_Iterator_equal(y, start) && deq->is_less(current, y.deref(&y))) {
 
       temp = y.deref(&y);   //ugly way to do data[y+1] = data[y];
       y.inc(&y);
@@ -186,7 +188,8 @@ void sort(Deque_int *deq, Deque_int_Iterator start, Deque_int_Iterator end) {
       y.dec(&y);            //y--
     }
 
-    if (Deque_int_Iterator_equal(y, it1)) {
+    //if (y == 0)
+    if (Deque_int_Iterator_equal(y, start)) {
       temp = y.deref(&y);   //data[y+1] = data[y];
       y.inc(&y);
       *(y.addr) = temp;
@@ -199,14 +202,19 @@ void sort(Deque_int *deq, Deque_int_Iterator start, Deque_int_Iterator end) {
 }
 
 bool Deque_int_equal(Deque_int deq1, Deque_int deq2) {
-  if (deq1.size(deq1) != deq2.size(deq2)) {
+  if (deq1.size(&deq1) != deq2.size(&deq2)) {
     return false;
   }
   Deque_int_Iterator it2 = deq2.begin(&deq2);
-  for (Deque_int_Iterator it1 = deq1.begin(&deq1); !Deque_MyClass_Iterator_equal(it1, deq1.end(&deq1)); it1.inc(&it1)) {
-    if (it2.deref(&it2) != it1.deref(&it1)) { //structs cant be == so idk
-                                              //change to double less than comparison
-                                              //figure out if want to deal with func not set first
+  for (Deque_int_Iterator it1 = deq1.begin(&deq1); !Deque_int_Iterator_equal(it1, deq1.end(&deq1)); it1.inc(&it1)) {
+
+    //long boolean statement, basically testing if *it1 == *it2 by
+    //doing two less than comparisons, neither should return true if ==
+    if (deq1.is_less(it2.deref(&it2), it1.deref(&it1)) || deq1.is_less(it1.deref(&it1), it2.deref(&it2))) {
+      return false;
+    }
+    //one for each cmp function to be safe
+    if (deq2.is_less(it2.deref(&it2), it1.deref(&it1)) || deq2.is_less(it1.deref(&it1), it2.deref(&it2))) {
       return false;
     }
     it2.inc(&it2);
@@ -214,12 +222,8 @@ bool Deque_int_equal(Deque_int deq1, Deque_int deq2) {
   return true;
 }
 
-bool Deque_int_Iterator_equal(Deque_int_Iterator it1, Deque_int_Iterator it2) {
-  return (it1->addr == it2->addr);
-}
-
 void Deque_int_ctor(Deque_int *deq, bool (less_than)(int, int)) {
-  deq->data_size = 8;   //feel like power of 2 has some benefit?
+  deq->data_size = 8;         //feel like power of 2 has some benefit?
   deq->data = (int*)malloc(deq->data_size * sizeof(int));
   deq->front_i = 0;
   deq->back_i = 0;
@@ -236,10 +240,8 @@ void Deque_int_ctor(Deque_int *deq, bool (less_than)(int, int)) {
   deq->begin = &begin;
   deq->end = &end;
   deq->size = &size;
-  deq->sort = &sort;    //init all function pointers in deque
-
-  is_less = less_than;  //set cmp function for sorting;
-                        //test to see if need as a deque function instead
+  deq->sort = &sort;          //init all function pointers in deque
+  deq->is_less = less_than;   //set cmp function for sorting
 }
 
 #endif
