@@ -1,4 +1,5 @@
 all:	test.cpp Deque.hpp
-	g++ test.cpp
+	g++ test.cpp -Wl,--no-as-needed -ldl
 
-clean:	rm -f a.out
+clean:	
+	rm -f a.out
